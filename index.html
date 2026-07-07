@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111111">
+<title>Snake - Nokia Classic</title>
+<!-- أيقونة الأندرويد عند إضافة الصفحة للشاشة الرئيسية (SVG مضمّن، بدون ملف خارجي) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%239bbf0b'/%3E%3Crect x='15' y='45' width='20' height='20' fill='%231f2b0e'/%3E%3Crect x='35' y='45' width='20' height='20' fill='%231f2b0e'/%3E%3Crect x='55' y='45' width='20' height='20' fill='%231f2b0e'/%3E%3Crect x='55' y='25' width='20' height='20' fill='%231f2b0e'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%239bbf0b'/%3E%3Crect x='15' y='45' width='20' height='20' fill='%231f2b0e'/%3E%3Crect x='35' y='45' width='20' height='20' fill='%231f2b0e'/%3E%3Crect x='55' y='45' width='20' height='20' fill='%231f2b0e'/%3E%3Crect x='55' y='25' width='20' height='20' fill='%231f2b0e'/%3E%3C/svg%3E">
+<!-- Web App Manifest عشان لو اتفتح على استضافة حقيقية (https) يظهر خيار "تثبيت التطبيق" على أندرويد -->
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Snake%20Nokia%20Classic%22%2C%22short_name%22%3A%22Snake%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23111111%22%2C%22theme_color%22%3A%22%23111111%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%2520viewBox%3D%270%200%20100%20100%27%253E%253Crect%2520width%3D%27100%27%2520height%3D%27100%27%2520fill%3D%27%25239bbf0b%27%2F%253E%253Crect%2520x%3D%2715%27%2520y%3D%2745%27%2520width%3D%2720%27%2520height%3D%2720%27%2520fill%3D%27%25231f2b0e%27%2F%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<style>
+  :root{
+    --lcd-bg: #9bbf0b;      /* الخلفية الخضراء الفسفورية الكلاسيكية */
+    --lcd-bg-dark: #8bad0a;
+    --lcd-fg: #1f2b0e;      /* اللون الغامق للبكسلات */
+    --case-color: #2b2b2b;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    height: 100%;
+    background: #111;
+    font-family: 'Courier New', monospace;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* الجسم مصمم mobile-first: يملأ شاشة الموبايل بالكامل */
+  body{
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* جسم الهاتف: على الموبايل يملأ الشاشة الحقيقية بدون إطار وهمي إضافي */
+  .phone-case{
+    background: linear-gradient(160deg, #3a3a3a, #1a1a1a);
+    width: 100%;
+    height: 100%;
+    padding: 14px 12px 18px;
+    display:flex;
+    flex-direction: column;
+  }
+
+  .brand{
+    text-align:center;
+    color: #999;
+    font-size: 11px;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+    font-weight: bold;
+    flex: 0 0 auto;
+  }
+
+  /* شاشة LCD */
+  .screen-frame{
+    background: #0d0d0d;
+    border: 6px solid #444;
+    border-radius: 6px;
+    padding: 8px;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
+    flex: 1 1 auto;
+    min-height: 0;
+    display:flex;
+  }
+
+  .lcd-screen{
+    position: relative;
+    background: var(--lcd-bg);
+    background-image:
+      linear-gradient(var(--lcd-bg-dark) 1px, transparent 1px),
+      linear-gradient(90deg, var(--lcd-bg-dark) 1px, transparent 1px);
+    background-size: 10% 10%;
+    border-radius: 2px;
+    overflow: hidden;
+    filter: contrast(1.05);
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display:flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  canvas{
+    display:block;
+    width: auto;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: pixelated;
+    margin: auto;
+  }
+
+  /* على الشاشات الكبيرة (كمبيوتر) نرجع لشكل بطاقة هاتف صغيرة في النص */
+  @media (min-width: 600px){
+    body{ justify-content: center; }
+    .phone-case{
+      border-radius: 28px;
+      padding: 22px 18px 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 0 6px rgba(255,255,255,0.08);
+      width: 340px;
+      height: auto;
+      max-width: 92vw;
+    }
+    .screen-frame{ flex: none; }
+    .lcd-screen{ aspect-ratio: 1/1; }
+  }
+
+  /* شريط الحالة العلوي داخل الشاشة */
+  .hud{
+    position:absolute;
+    top:0; left:0; right:0;
+    display:flex;
+    justify-content:space-between;
+    padding: 4px 8px;
+    color: var(--lcd-fg);
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 13px;
+    letter-spacing: 1px;
+    z-index: 5;
+    text-shadow: 0 0 1px var(--lcd-fg);
+  }
+
+  .overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color: var(--lcd-fg);
+    background: rgba(155,191,11,0.92);
+    z-index: 10;
+    padding: 20px;
+  }
+
+  .overlay.hidden{ display:none; }
+
+  .overlay h1{
+    font-size: 26px;
+    letter-spacing: 2px;
+    margin: 0 0 6px;
+    text-shadow: 1px 1px 0 rgba(31,43,14,0.3);
+  }
+
+  .overlay .snake-deco{
+    font-size: 20px;
+    letter-spacing: 6px;
+    margin-bottom: 14px;
+  }
+
+  .overlay p{
+    margin: 4px 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .overlay .final-score{
+    font-size: 20px;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+
+  .lcd-btn{
+    margin-top: 16px;
+    background: var(--lcd-fg);
+    color: var(--lcd-bg);
+    border: 2px solid var(--lcd-fg);
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 15px;
+    letter-spacing: 2px;
+    padding: 10px 26px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: transform 0.1s ease;
+  }
+  .lcd-btn:active{ transform: scale(0.94); }
+
+  .hint{
+    font-size: 11px;
+    opacity: 0.75;
+    margin-top: 14px;
+  }
+
+  /* أزرار التحكم السفلية - أكبر على الموبايل عشان تناسب اللمس بالإصبع */
+  .dpad{
+    flex: 0 0 auto;
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: 64px 64px 64px;
+    grid-template-rows: 54px 54px 54px;
+    gap: 8px;
+    justify-content:center;
+  }
+  .dpad button{
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 8px;
+    color: #ccc;
+    font-size: 20px;
+    user-select:none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dpad button:active{ background:#555; }
+  #btn-up{ grid-column:2; grid-row:1; }
+  #btn-left{ grid-column:1; grid-row:2; }
+  #btn-down{ grid-column:2; grid-row:3; }
+  #btn-right{ grid-column:3; grid-row:2; }
+
+  @media (min-width: 600px){
+    .dpad{
+      grid-template-columns: 48px 48px 48px;
+      grid-template-rows: 40px 40px 40px;
+    }
+    .dpad button{ font-size: 16px; }
+  }
+
+  .speaker{
+    width: 60px; height: 6px;
+    background: #444;
+    border-radius: 3px;
+    margin: 0 auto 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-case">
+  <div class="speaker"></div>
+  <div class="brand">NOKIA STYLE</div>
+
+  <div class="screen-frame">
+    <div class="lcd-screen" id="lcdScreen">
+      <div class="hud">
+        <span id="scoreLabel">SCORE:0</span>
+        <span id="highScoreLabel">HI:0</span>
+      </div>
+
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- شاشة البداية -->
+      <div class="overlay" id="startOverlay">
+        <div class="snake-deco">■ ■ ■ ■</div>
+        <h1>SNAKE</h1>
+        <p>استخدم الأسهم للتحكم</p>
+        <p>أو اسحب بإصبعك على الموبايل</p>
+        <button class="lcd-btn" id="startBtn">Start Game</button>
+        <div class="hint">Arrow Keys / Swipe to Move</div>
+      </div>
+
+      <!-- شاشة نهاية اللعبة -->
+      <div class="overlay hidden" id="gameOverOverlay">
+        <h1>GAME OVER</h1>
+        <div class="final-score" id="finalScore">SCORE: 0</div>
+        <p id="newHighScoreMsg" style="display:none;">★ NEW HIGH SCORE ★</p>
+        <button class="lcd-btn" id="restartBtn">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dpad">
+    <button id="btn-up">▲</button>
+    <button id="btn-left">◀</button>
+    <button id="btn-down">▼</button>
+    <button id="btn-right">▶</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- إعدادات أساسية للشبكة ----------
+  const GRID_SIZE = 18;               // عدد الخلايا في كل صف/عمود
+  const CANVAS_PIXELS = 360;          // حجم الكانفاس الداخلي (مربع)
+  const CELL = CANVAS_PIXELS / GRID_SIZE;
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = CANVAS_PIXELS;
+  canvas.height = CANVAS_PIXELS;
+
+  const COLOR_BG = '#9bbf0b';
+  const COLOR_FG = '#1f2b0e';
+
+  const scoreLabel = document.getElementById('scoreLabel');
+  const highScoreLabel = document.getElementById('highScoreLabel');
+  const startOverlay = document.getElementById('startOverlay');
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const finalScoreEl = document.getElementById('finalScore');
+  const newHighScoreMsg = document.getElementById('newHighScoreMsg');
+  const startBtn = document.getElementById('startBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const HIGH_SCORE_KEY = 'nokia_snake_high_score';
+  let highScore = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
+  highScoreLabel.textContent = 'HI:' + highScore;
+
+  // ---------- حالة اللعبة ----------
+  let snake, direction, nextDirection, food, score, speedMs, gameLoopTimer, running;
+
+  const BASE_SPEED = 160;   // ملي ثانية بين كل حركة (أبطأ = أسهل)
+  const MIN_SPEED = 70;     // أقصى سرعة ممكنة
+  const SPEED_STEP = 4;     // مقدار زيادة السرعة كل ما ناكل
+
+  function resetState(){
+    const mid = Math.floor(GRID_SIZE / 2);
+    snake = [
+      { x: mid - 1, y: mid },
+      { x: mid - 2, y: mid },
+      { x: mid - 3, y: mid }
+    ];
+    direction = { x: 1, y: 0 };
+    nextDirection = { x: 1, y: 0 };
+    score = 0;
+    speedMs = BASE_SPEED;
+    spawnFood();
+    updateScoreLabel();
+  }
+
+  function spawnFood(){
+    let pos;
+    do {
+      pos = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE)
+      };
+    } while (snake.some(seg => seg.x === pos.x && seg.y === pos.y));
+    food = pos;
+  }
+
+  function updateScoreLabel(){
+    scoreLabel.textContent = 'SCORE:' + score;
+  }
+
+  // ---------- صوت beep بسيط باستخدام WebAudio ----------
+  let audioCtx = null;
+  function playBeep(){
+    try{
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 880;
+      gain.gain.value = 0.05;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
+      osc.stop(audioCtx.currentTime + 0.13);
+    } catch(e){ /* المتصفح لا يدعم الصوت، تجاهل */ }
+  }
+
+  // ---------- الرسم ----------
+  function drawCell(gx, gy, filled){
+    const px = gx * CELL;
+    const py = gy * CELL;
+    const pad = 1; // فراغ بسيط بين البكسلات زي شاشة LCD حقيقية
+    ctx.fillStyle = filled ? COLOR_FG : COLOR_BG;
+    ctx.fillRect(px + pad, py + pad, CELL - pad * 2, CELL - pad * 2);
+  }
+
+  function render(){
+    // خلفية
+    ctx.fillStyle = COLOR_BG;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // الأكل
+    drawCell(food.x, food.y, true);
+
+    // الثعبان
+    snake.forEach(seg => drawCell(seg.x, seg.y, true));
+  }
+
+  // ---------- منطق الحركة ----------
+  function tick(){
+    direction = nextDirection;
+
+    const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+    // اصطدام بالحيطة (بدون teleport)
+    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE){
+      return endGame();
+    }
+
+    // اصطدام بالنفس
+    if (snake.some(seg => seg.x === head.x && seg.y === head.y)){
+      return endGame();
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y){
+      score += 10;
+      updateScoreLabel();
+      playBeep();
+      spawnFood();
+      // زيادة تدريجية في السرعة كل ما النقاط تزيد
+      speedMs = Math.max(MIN_SPEED, BASE_SPEED - Math.floor(score / 10) * SPEED_STEP);
+      restartLoop();
+    } else {
+      snake.pop();
+    }
+
+    render();
+  }
+
+  function restartLoop(){
+    clearInterval(gameLoopTimer);
+    gameLoopTimer = setInterval(tick, speedMs);
+  }
+
+  function endGame(){
+    running = false;
+    clearInterval(gameLoopTimer);
+
+    let isNewHigh = false;
+    if (score > highScore){
+      highScore = score;
+      localStorage.setItem(HIGH_SCORE_KEY, String(highScore));
+      highScoreLabel.textContent = 'HI:' + highScore;
+      isNewHigh = true;
+    }
+
+    finalScoreEl.textContent = 'SCORE: ' + score;
+    newHighScoreMsg.style.display = isNewHigh ? 'block' : 'none';
+    gameOverOverlay.classList.remove('hidden');
+  }
+
+  function startGame(){
+    startOverlay.classList.add('hidden');
+    gameOverOverlay.classList.add('hidden');
+    resetState();
+    render();
+    running = true;
+    restartLoop();
+  }
+
+  // ---------- التحكم: لوحة المفاتيح ----------
+  function setDirection(dx, dy){
+    // منع الرجوع المباشر عكس الاتجاه الحالي
+    if (dx === -direction.x && dy === -direction.y) return;
+    nextDirection = { x: dx, y: dy };
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (!running) return;
+    switch(e.key){
+      case 'ArrowUp':    e.preventDefault(); setDirection(0, -1); break;
+      case 'ArrowDown':  e.preventDefault(); setDirection(0, 1);  break;
+      case 'ArrowLeft':  e.preventDefault(); setDirection(-1, 0); break;
+      case 'ArrowRight': e.preventDefault(); setDirection(1, 0);  break;
+    }
+  });
+
+  // ---------- التحكم: أزرار D-Pad على الشاشة ----------
+  document.getElementById('btn-up').addEventListener('click', () => running && setDirection(0, -1));
+  document.getElementById('btn-down').addEventListener('click', () => running && setDirection(0, 1));
+  document.getElementById('btn-left').addEventListener('click', () => running && setDirection(-1, 0));
+  document.getElementById('btn-right').addEventListener('click', () => running && setDirection(1, 0));
+
+  // ---------- التحكم: السحب باللمس (Swipe) ----------
+  let touchStartX = 0, touchStartY = 0;
+  const lcdScreen = document.getElementById('lcdScreen');
+
+  lcdScreen.addEventListener('touchstart', (e) => {
+    const t = e.changedTouches[0];
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+  }, { passive: true });
+
+  lcdScreen.addEventListener('touchend', (e) => {
+    if (!running) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    const SWIPE_THRESHOLD = 20;
+
+    if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
+
+    if (Math.abs(dx) > Math.abs(dy)){
+      setDirection(dx > 0 ? 1 : -1, 0);
+    } else {
+      setDirection(0, dy > 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  // ---------- الأزرار ----------
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+
+  // رسم أولي فارغ خلف شاشة البداية
+  resetState();
+  render();
+})();
+</script>
+</body>
+</html>
