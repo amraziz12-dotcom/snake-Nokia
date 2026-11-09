@@ -5,7 +5,6 @@
   const A = { pin: sessionStorage.getItem('att_pin') || '', data: null, tab: 'all', settings: {} };
 
   $('#aProject').textContent = `${CFG.DEPARTMENT || ''} — ${CFG.PROJECT_NAME}`;
-  $('#aProject2').textContent = CFG.PROJECT_NAME;
   $('#aDemo').classList.toggle('hidden', !DEMO);
   $('#day').value = isoDate(Date.now());
 
@@ -13,7 +12,9 @@
   async function login(pin) {
     const btn = $('#pinBtn'); btn.disabled = true; btn.textContent = 'جاري التحقق…';
     try {
-      const r = await api('admin_login', { pin });
+      const r = await api('admin_login', { pin, ua: navigator.userAgent });
+      A.admin = r.admin || {};
+      $('#aWho').textContent = `${A.admin.name || ''}${A.admin.role ? ' · ' + A.admin.role : ''}`;
       A.pin = pin; A.settings = r.settings || {}; sessionStorage.setItem('att_pin', pin);
       $('#aLogin').classList.add('hidden'); $('#aMain').classList.remove('hidden');
       load();
@@ -150,7 +151,7 @@
         <div class="field"><label>أقصى دقة GPS مقبولة (متر)</label><input class="input" id="sAcc" value="${esc(s.maxAccuracy ?? 150)}" inputmode="numeric"></div>
         <label class="row" style="justify-content:flex-start;gap:10px"><input type="checkbox" id="sStrict" ${s.strictDevice !== false && s.strictDevice !== 'FALSE' ? 'checked' : ''} style="width:20px;height:20px"> ربط كل موظف بجهاز واحد (منع البصمة نيابةً عن الغير)</label>
       </div>
-      <div class="card"><h3>🔐 تغيير رمز المشرف</h3>
+      <div class="card"><h3>🔐 تغيير رمز الدخول الخاص بك</h3>
         <input class="input" id="sPin" type="password" placeholder="اتركه فارغاً لعدم التغيير" inputmode="numeric">
       </div>
       <button class="btn ok" id="saveS">حفظ الإعدادات</button>
@@ -173,7 +174,7 @@
         strictDevice: $('#sStrict').checked
       };
       const np = $('#sPin').value.trim();
-      if (np) { if (np.length < 4) return toast('الرمز يجب أن يكون 4 أرقام على الأقل', 'warn'); settings.newPin = np; }
+      if (np) { if (!/^\d{6,12}$/.test(np)) return toast('الرمز يجب أن يكون من 6 إلى 12 رقماً', 'warn'); settings.newPin = np; }
       try {
         const r = await api('admin_save_settings', { pin: A.pin, settings });
         A.settings = r.settings || settings;

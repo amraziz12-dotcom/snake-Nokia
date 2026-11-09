@@ -375,7 +375,6 @@
       <span>الإصدار</span><span>1.0${DEMO ? ' (تجريبي)' : ''}</span></div>
       <div style="display:grid;gap:10px">
         <button class="btn ghost" id="mRefresh">🔄 تحديث الموقع والحالة</button>
-        <a class="btn ghost" href="admin.html" style="text-align:center;text-decoration:none">🛡️ لوحة المشرف</a>
         <button class="btn bad" id="mLogout">تسجيل الخروج</button>
         <button class="btn ghost" data-close>إغلاق</button>
       </div>`);

@@ -18,6 +18,8 @@ const OPEN_SHIFT_HOURS = 20;          // بعدها يعتبر الحضور ال
 const SH_EMP = 'الموظفين';
 const SH_DEV = 'الأجهزة';
 const SH_SET = 'الإعدادات';
+const SH_ADM = 'المشرفين';          // من يحق له دخول لوحة المتابعة فقط
+const SH_LOG = 'سجل دخول المشرفين';
 const REC_PREFIX = 'سجل ';
 const REC_HEADERS = ['التاريخ', 'الوقت', 'الرقم الوظيفي', 'اسم الموظف', 'القسم', 'النوع', 'داخل النطاق',
   'المسافة (م)', 'دقة GPS (م)', 'خط العرض', 'خط الطول', 'العنوان', 'الخريطة', 'الصورة',
@@ -30,8 +32,7 @@ const DEFAULT_SETTINGS = [
   ['shiftStart', '07:00', 'بداية الدوام HH:mm'],
   ['grace', 15, 'سماحية التأخير بالدقائق'],
   ['maxAccuracy', 150, 'أقصى دقة GPS مقبولة بالمتر'],
-  ['strictDevice', 'TRUE', 'ربط كل موظف بجهاز واحد TRUE/FALSE'],
-  ['adminPin', '1234', 'رمز دخول لوحة المشرف — غيّره فوراً!']
+  ['strictDevice', 'TRUE', 'ربط كل موظف بجهاز واحد TRUE/FALSE']
 ];
 
 /* قائمة فريق العمل (من ملف Excel) — تُنسخ إلى ورقة الموظفين عند التهيئة */
@@ -182,7 +183,11 @@ const ACTIONS = {
   login: login_,
   punch: punch_,
   history: history_,
-  admin_login: r => { checkPin_(r.pin); return { settings: publicSettings_() }; },
+  admin_login: r => {
+    const a = checkPin_(r.pin);
+    try { sheet_(SH_LOG).appendRow([fmt_(new Date(), 'yyyy-MM-dd HH:mm:ss'), a.name, a.role, String(r.ua || '').slice(0, 150)]); } catch (e) {}
+    return { admin: a, settings: publicSettings_() };
+  },
   admin_day: adminDay_,
   admin_photo: adminPhoto_,
   admin_reset_device: adminResetDevice_,
@@ -418,15 +423,27 @@ function history_(r) {
 }
 
 /* ---------- المشرف ---------- */
+/* ---------- صلاحية الدخول: المدير والمسؤول الإداري فقط ---------- */
+function admins_() {
+  return sheet_(SH_ADM).getDataRange().getValues().slice(1)
+    .map((r, i) => ({ row: i + 2, name: String(r[0]).trim(), role: String(r[1]).trim(), pin: String(r[2]).trim(), active: String(r[3]).toUpperCase() !== 'FALSE' }))
+    .filter(a => a.name && a.pin);
+}
+
 function checkPin_(pin) {
   const cache = CacheService.getScriptCache();
   const fails = +(cache.get('pinFails') || 0);
   if (fails >= 10) throw new Error('محاولات كثيرة خاطئة — حاول بعد 10 دقائق');
-  if (String(pin || '') !== String(settings_().adminPin)) {
+  pin = String(pin || '').trim();
+  const a = pin.length >= 4 ? admins_().find(x => x.active && x.pin === pin) : null;
+  if (!a) {
     cache.put('pinFails', String(fails + 1), 600);
-    throw new Error('رمز المشرف غير صحيح');
+    throw new Error('غير مصرح — لوحة المتابعة للمدير والمسؤول الإداري فقط');
   }
+  return { name: a.name, role: a.role, row: a.row };
 }
+
+function randomPin_() { return String(Math.floor(100000 + Math.random() * 900000)); }
 
 function adminDay_(r) {
   checkPin_(r.pin);
@@ -469,15 +486,17 @@ function adminResetDevice_(r) {
 }
 
 function adminSaveSettings_(r) {
-  checkPin_(r.pin);
+  const me = checkPin_(r.pin);
   const inS = r.settings || {};
   const allowed = { lat: 1, lng: 1, radius: 1, shiftStart: 1, grace: 1, maxAccuracy: 1, strictDevice: 1 };
   const upd = {};
   Object.keys(inS).forEach(k => { if (allowed[k]) upd[k] = inS[k]; });
   if (upd.strictDevice !== undefined) upd.strictDevice = upd.strictDevice === true || String(upd.strictDevice).toUpperCase() === 'TRUE' ? 'TRUE' : 'FALSE';
   if (inS.newPin) {
-    if (!/^\d{4,12}$/.test(String(inS.newPin))) throw new Error('رمز المشرف يجب أن يكون من 4 إلى 12 رقماً');
-    upd.adminPin = String(inS.newPin);
+    const np = String(inS.newPin);
+    if (!/^\d{6,12}$/.test(np)) throw new Error('الرمز يجب أن يكون من 6 إلى 12 رقماً');
+    if (admins_().some(x => x.pin === np && x.row !== me.row)) throw new Error('هذا الرمز غير متاح — اختر رمزاً آخر');
+    sheet_(SH_ADM).getRange(me.row, 3).setValue(np);   // يغيّر رمز المشرف الحالي فقط
   }
   ['lat', 'lng'].forEach(k => { if (upd[k] !== undefined && upd[k] !== '' && isNaN(+upd[k])) throw new Error('إحداثيات غير صالحة'); });
   const sh = sheet_(SH_SET);
@@ -526,6 +545,29 @@ function setup() {
     set.setFrozenRows(1); set.setRightToLeft(true); set.autoResizeColumns(1, 3);
   }
 
+  let adm = ss.getSheetByName(SH_ADM);
+  if (!adm) {
+    adm = ss.insertSheet(SH_ADM);
+    adm.appendRow(['الاسم', 'الصفة', 'رمز الدخول', 'نشط']);
+    adm.getRange('C:C').setNumberFormat('@');
+    adm.getRange(2, 1, 2, 4).setValues([
+      ['المدير', 'مدير المشروع', randomPin_(), 'TRUE'],
+      ['المسؤول الإداري', 'مسؤول إداري', randomPin_(), 'TRUE']
+    ]);
+    adm.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#7f1d1d').setFontColor('#ffffff');
+    adm.setFrozenRows(1); adm.setRightToLeft(true); adm.autoResizeColumns(1, 4);
+    adm.getRange('E1').setValue('⚠️ سرّي — اكتب الاسم الحقيقي لكل منهما، وأعط كل واحد رمزه فقط. لا تشارك هذه الورقة مع أحد.');
+    adm.protect().setDescription('المشرفين — المالك فقط').setWarningOnly(true);
+  }
+
+  let lg = ss.getSheetByName(SH_LOG);
+  if (!lg) {
+    lg = ss.insertSheet(SH_LOG);
+    lg.appendRow(['الوقت', 'الاسم', 'الصفة', 'الجهاز']);
+    lg.getRange(1, 1, 1, 4).setFontWeight('bold');
+    lg.setFrozenRows(1); lg.setRightToLeft(true);
+  }
+
   const def = ss.getSheetByName('Sheet1') || ss.getSheetByName('ورقة1');
   if (def && ss.getSheets().length > 1 && def.getLastRow() === 0) ss.deleteSheet(def);
 
@@ -534,7 +576,8 @@ function setup() {
   // تفعيل صلاحية الخرائط (للعنوان)
   try { Maps.newGeocoder().reverseGeocode(21.5, 39.2); } catch (e) {}
   CacheService.getScriptCache().removeAll(['settings', 'emps']);
-  Logger.log('✓ تمت التهيئة. الآن: Deploy ← New deployment ← Web app');
+  admins_().forEach(a => Logger.log('🔐 ' + a.name + ' — رمز الدخول: ' + a.pin));
+  Logger.log('✓ تمت التهيئة. رموز الدخول موجودة في ورقة «المشرفين». الآن: Deploy ← New deployment ← Web app');
 }
 
 /** شغّلها بعد تعديل ورقة الموظفين لتحديث القائمة فوراً */

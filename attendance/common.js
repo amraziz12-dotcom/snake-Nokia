@@ -79,7 +79,8 @@
     const site = settings.lat !== '' && settings.lat != null ? { lat: +settings.lat, lng: +settings.lng, radius: +settings.radius } : (CFG.SITE || null);
     const find = id => emps.find(e => e.id === String(id).trim());
     const lastOf = id => recs.filter(r => r.empId === id).sort((a, b) => b.ts - a.ts)[0] || null;
-    const checkPin = () => { if (String(p.pin) !== String(store.get('att_demo_pin', '1234'))) throw new Error('رمز المشرف غير صحيح'); };
+    const admins = store.get('att_demo_admins', [{ name: 'المدير', role: 'مدير المشروع', pin: '111111' }, { name: 'المسؤول الإداري', role: 'مسؤول إداري', pin: '222222' }]);
+    const checkPin = () => { const a = admins.find(x => x.pin === String(p.pin)); if (!a) throw new Error('غير مصرح — لوحة المتابعة للمدير والمسؤول الإداري فقط'); return a; };
 
     switch (action) {
       case 'config': return { ok: true, projectName: CFG.PROJECT_NAME, site, maxAccuracy: settings.maxAccuracy, demo: true };
@@ -110,7 +111,7 @@
         return { ok: true, record: r, last: { t: r.type, ts: r.ts } };
       }
       case 'history': return { ok: true, records: recs.filter(r => r.empId === String(p.empId)).sort((a, b) => b.ts - a.ts).slice(0, 60) };
-      case 'admin_login': checkPin(); return { ok: true, settings, demo: true };
+      case 'admin_login': { const a = checkPin(); return { ok: true, admin: { name: a.name, role: a.role }, settings, demo: true }; }
       case 'admin_day': checkPin(); return { ok: true, employees: emps, records: recs.filter(r => r.date === p.date), settings };
       case 'admin_photo': {
         checkPin(); const r = recs.find(x => x.photoId === p.fileId);
@@ -118,8 +119,8 @@
       }
       case 'admin_reset_device': checkPin(); return { ok: true, removed: 1 };
       case 'admin_save_settings': {
-        checkPin(); const s = Object.assign({}, settings, p.settings);
-        if (p.settings.newPin) { store.set('att_demo_pin', p.settings.newPin); delete s.newPin; }
+        const me = checkPin(); const s = Object.assign({}, settings, p.settings);
+        if (p.settings.newPin) { me.pin = p.settings.newPin; store.set('att_demo_admins', admins); delete s.newPin; }
         store.set('att_demo_settings', s); return { ok: true, settings: s };
       }
     }
