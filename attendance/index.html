@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>بصمة الحضور</title>
+<meta name="description" content="تسجيل الحضور والانصراف بالصورة والموقع — كوبري المروة">
+<meta name="theme-color" content="#0b1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="بصمة الحضور">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ================= شاشة الدخول ================= -->
+<section id="vLogin" class="wrap hidden">
+  <div class="hero">
+    <img src="icons/icon-512.png" alt="">
+    <h1>بصمة الحضور</h1>
+    <p id="loginProject">فريق السلامة — كوبري المروة</p>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label for="empId">الرقم الوظيفي</label>
+      <input id="empId" class="input center" inputmode="numeric" autocomplete="off" placeholder="0000000" maxlength="10">
+    </div>
+    <div id="foundBox" class="found hidden">
+      <div class="avatar" id="foundAv" style="width:42px;height:42px;font-size:16px;border-radius:12px"></div>
+      <div><b id="foundName"></b><div class="muted small" id="foundDept"></div></div>
+    </div>
+    <button id="loginBtn" class="btn" disabled>دخول</button>
+    <p class="muted small" style="text-align:center;margin:12px 0 0">يتم ربط حسابك بهذا الجهاز عند أول دخول</p>
+  </div>
+  <div id="installBox" class="banner info hidden">
+    <span style="flex:1">ثبّت التطبيق على شاشتك الرئيسية لسهولة الوصول</span>
+    <button class="btn sm" id="installBtn">تثبيت</button>
+  </div>
+  <div id="iosHint" class="banner info hidden">
+    <span>للتثبيت على iPhone: اضغط زر المشاركة <b>⬆︎</b> ثم «إضافة إلى الشاشة الرئيسية»</span>
+  </div>
+</section>
+
+<!-- ================= الشاشة الرئيسية ================= -->
+<section id="vHome" class="wrap hidden">
+  <div class="top">
+    <div class="brand">
+      <img src="icons/icon-192.png" alt="">
+      <div><b>بصمة الحضور</b><small id="homeProject">كوبري المروة</small></div>
+    </div>
+    <div class="row" style="gap:8px">
+      <span id="netBadge" class="badge ok"><span class="dot"></span>متصل</span>
+      <button class="icon-btn" id="menuBtn" aria-label="القائمة">☰</button>
+    </div>
+  </div>
+
+  <div id="demoBanner" class="banner warn hidden">
+    <span>⚠️ وضع التجربة: البيانات محفوظة على هذا الجهاز فقط. اربط الخادم من ملف config.js</span>
+  </div>
+  <div id="pendingBanner" class="banner warn hidden">
+    <span style="flex:1" id="pendingTxt"></span>
+    <button class="btn sm" id="syncBtn">مزامنة</button>
+  </div>
+
+  <div class="card">
+    <div class="emp">
+      <div class="avatar" id="av"></div>
+      <div style="flex:1;min-width:0">
+        <b id="empName"></b>
+        <div class="muted small"><span id="empIdTxt"></span> · <span id="empDept"></span></div>
+      </div>
+      <span id="statusBadge" class="badge">—</span>
+    </div>
+  </div>
+
+  <div class="card clock">
+    <div class="t" id="clockT">--:--</div>
+    <div class="d" id="clockD"></div>
+  </div>
+
+  <div class="punch">
+    <button id="punchBtn" class="pbtn" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 11c0 3.5-1 6.5-2.5 8.5"/><path d="M15.5 12.5c0 2.5-.5 5-1.5 7"/><path d="M8.5 11a3.5 3.5 0 0 1 7 0"/>
+        <path d="M6 13c.3-1 .5-1.8.5-2.5a5.5 5.5 0 0 1 11 0c0 .8 0 1.6-.1 2.4"/><path d="M4.5 9a8 8 0 0 1 15 0"/>
+        <path d="M6.5 5.5A9.9 9.9 0 0 1 12 4c2 0 3.9.6 5.5 1.6"/><path d="M18.5 15.5c-.2 1.3-.5 2.6-1 3.8"/>
+      </svg>
+      <span id="punchTxt">تسجيل حضور</span>
+      <small id="punchSub">اضغط للبصمة</small>
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <h3 style="margin:0">📍 موقعك الحالي</h3>
+      <span id="geoBadge" class="badge warn"><span class="dot"></span>جاري التحديد…</span>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div><div class="muted small">البعد عن الموقع</div><b id="geoDist">—</b></div>
+      <div><div class="muted small">دقة GPS</div><b id="geoAcc">—</b></div>
+    </div>
+    <div class="muted small" style="margin-top:8px" id="geoCoords"></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h3 style="margin:0">سجل اليوم</h3><button class="btn ghost sm" id="histBtn">السجل الكامل</button></div>
+    <ul class="log" id="todayLog" style="margin-top:8px"></ul>
+  </div>
+</section>
+
+<!-- ================= الكاميرا ================= -->
+<div id="vCam" class="cam hidden">
+  <video id="video" playsinline autoplay muted></video>
+  <img id="shot" class="shot hidden" alt="">
+  <div class="guide" id="guide"><div></div></div>
+  <div class="camtop"><b id="camTitle">صورة الحضور</b><span class="small">ضع وجهك داخل الإطار مع ظهور مكان العمل</span></div>
+  <div class="bar" id="camBar">
+    <button class="btn ghost sm" id="camCancel">إلغاء</button>
+    <button class="shutter" id="shutter" aria-label="التقاط"></button>
+    <button class="btn ghost sm" id="camFlip">🔄 تبديل</button>
+  </div>
+  <div class="bar hidden" id="camBar2">
+    <button class="btn ghost" id="retake">إعادة</button>
+    <button class="btn ok" id="confirmShot">إرسال البصمة ✓</button>
+  </div>
+</div>
+
+<!-- ================= نافذة ================= -->
+<div id="overlay" class="overlay hidden"><div class="sheet" id="sheet"></div></div>
+<canvas id="canvas" class="hidden"></canvas>
+
+<script src="config.js"></script>
+<script src="employees.js"></script>
+<script src="common.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

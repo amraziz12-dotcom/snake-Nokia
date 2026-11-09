@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>لوحة المشرف</title>
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<section id="aLogin" class="wrap">
+  <div class="hero">
+    <img src="icons/icon-512.png" alt="">
+    <h1>لوحة المشرف</h1>
+    <p id="aProject">متابعة الحضور والانصراف</p>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label for="pin">رمز المشرف</label>
+      <input id="pin" type="password" class="input center" inputmode="numeric" autocomplete="current-password" placeholder="••••">
+    </div>
+    <button id="pinBtn" class="btn">دخول</button>
+    <p class="muted small" style="text-align:center;margin:12px 0 0"><a href="index.html" style="color:#7dd3fc">← العودة لتطبيق الموظف</a></p>
+  </div>
+</section>
+
+<section id="aMain" class="wrap wide hidden">
+  <div class="top">
+    <div class="brand">
+      <img src="icons/icon-192.png" alt="">
+      <div><b>لوحة المشرف</b><small id="aProject2"></small></div>
+    </div>
+    <div class="row" style="gap:8px">
+      <button class="icon-btn" id="refreshBtn" title="تحديث">⟳</button>
+      <button class="icon-btn" id="settingsBtn" title="الإعدادات">⚙</button>
+      <button class="icon-btn" id="outBtn" title="خروج">⎋</button>
+    </div>
+  </div>
+
+  <div id="aDemo" class="banner warn hidden">⚠️ وضع التجربة — تظهر هنا تسجيلات هذا الجهاز فقط</div>
+  <div id="aNoSite" class="banner info hidden">
+    <span style="flex:1">لم يتم تحديد موقع المشروع بعد — اضبطه من الإعدادات ليتم التحقق من وجود الموظفين في الموقع</span>
+    <button class="btn sm" id="setSiteBtn">ضبط الآن</button>
+  </div>
+
+  <div class="toolbar">
+    <input type="date" id="day" class="input">
+    <input type="search" id="q" class="input grow" placeholder="بحث بالاسم أو الرقم الوظيفي…">
+    <button class="btn sm" id="csvBtn">⬇ تصدير Excel</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div class="tabs" id="tabs"></div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>الموظف</th><th>الرقم الوظيفي</th><th>الحضور</th><th>الانصراف</th><th>ساعات العمل</th>
+        <th>البعد</th><th>الحالة</th><th>الصور</th><th>الخريطة</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <p class="muted small" id="updated" style="margin-top:10px"></p>
+</section>
+
+<div id="overlay" class="overlay hidden"><div class="sheet" id="sheet"></div></div>
+
+<script src="config.js"></script>
+<script src="employees.js"></script>
+<script src="common.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
